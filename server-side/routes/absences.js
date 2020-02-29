@@ -6,7 +6,6 @@ const Absences = require('../models/absences-model');
 router.get('/absences', (req, res, next) => {
   Absences.find()
     .then(absence => {
-      console.log("this is ittt", absence);
       res.json(absence);
     })
     .catch(err => {

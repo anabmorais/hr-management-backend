@@ -10,6 +10,8 @@ const logger       = require('morgan');
 const path         = require('path');
 const index        = require('./routes/index');
 const absence      = require('./routes/absences');
+const task         = require('./routes/tasks');
+const user         = require('./routes/users');
 
 mongoose
   .connect('mongodb://localhost/hr-management', {useNewUrlParser: true})
@@ -54,6 +56,8 @@ app.locals.title = 'Express - Generated with IronGenerator';
 
 app.use('/', index);
 app.use('/', absence);
+app.use('/', task);
+app.use('/', user);
 
 
 module.exports = app;

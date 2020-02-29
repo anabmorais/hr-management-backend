@@ -8,6 +8,6 @@ const itemSchema = new Schema({
   task: { type: Schema.Types.ObjectId, ref: 'Tasks' },
 });
 
-const Item = mongoose.model('Item', projectSchema);
+const Item = mongoose.model('Item', itemSchema);
 
 module.exports = Item;
