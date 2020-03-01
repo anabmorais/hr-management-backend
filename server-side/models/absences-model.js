@@ -1,11 +1,12 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+
 const Schema = mongoose.Schema;
 
 const absencesSchema = new Schema({
-  user: { type: Schema.Types.ObjectId, ref: 'Users' },
   date: Date,
+  user: { type: Schema.Types.ObjectId, ref: "Users" }
 });
 
-const Absences = mongoose.model('Absences', absencesSchema);
+const Absences = mongoose.model("Absences", absencesSchema);
 
 module.exports = Absences;

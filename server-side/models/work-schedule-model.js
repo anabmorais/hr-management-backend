@@ -1,11 +1,16 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+
 const Schema = mongoose.Schema;
 
-const scheduleSchema = new Schema({
+const workScheduleSchema = new Schema({
   date: Date,
   remarks: String,
+  items: [{ type: Schema.Types.ObjectId, ref: "WorkScheduleItem" }],
+  created_at: Date,
+  created_by: { type: Schema.Types.ObjectId, ref: "Users" },
+  is_active: Boolean
 });
 
-const Schedule = mongoose.model('Schedule', scheduleSchema);
+const WorkSchedule = mongoose.model("WorkSchedule", workScheduleSchema);
 
-module.exports = Schedule;
+module.exports = WorkSchedule;
