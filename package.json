@@ -1,10 +1,10 @@
 {
-  "name": "server-side",
+  "name": "hr-management-backend",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "dev": "DEBUG=server-side:* nodemon ./server.js",
+    "dev": "DEBUG=hr-management-backend:* nodemon ./server.js",
     "dev-windows": "nodemon ./server.js"
   },
   "dependencies": {
