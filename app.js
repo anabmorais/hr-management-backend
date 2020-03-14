@@ -9,9 +9,10 @@ const absence = require("./routes/absences");
 const task = require("./routes/tasks");
 const user = require("./routes/users");
 const workSchedule = require("./routes/work-schedule");
+const cors = require('cors');
 
 mongoose
-  .connect("mongodb://localhost/hr-management", { useNewUrlParser: true })
+  .connect(process.env.MONGODB_URI, { useNewUrlParser: true })
   .then(x => {
     console.log(`Connected to Mongo! Database name: "${x.connections[0].name}"`);
   })
@@ -28,6 +29,8 @@ const app = express();
 app.use(logger("dev"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(cors());
 
 app.use("/", absence);
 app.use("/", task);
