@@ -94,7 +94,7 @@ router.delete("/users/:userId", jwt({ secret: process.env.JWT_SECRET }), (req, r
 
   Users.findByIdAndUpdate(userId, { is_active: false })
     .then(() => {
-      res.json({ message: `User with ${userId} is removed successfully.` });
+      res.json({ message: `User with ${userId} was removed successfully.` });
     })
     .catch(error => {
       res.status(500).json({error: error.message});

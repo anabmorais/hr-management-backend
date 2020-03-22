@@ -1,39 +1,102 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const jwt = require("express-jwt");
+const moment = require("moment");
+const Users = require("../models/users-model");
+const Tasks = require("../models/tasks-model");
 const WorkSchedule = require("../models/work-schedule-model");
 const WorkScheduleItem = require("../models/work-schedule-item-model");
 
 const router = express.Router();
 
-const getWorkSchedule = date =>
-  WorkSchedule.findOne({
-    date,
-    is_active: true
+router.get("/work-schedule/events", (req, res) => {
+  const { date } = req.query;
+  const startOfDay = moment(date).startOf("day").toDate();
+  const endOfDay = moment(date).endOf("day").toDate();
+
+
+  WorkScheduleItem.find({
+    start: {"$lte": endOfDay },
+    end: {"$gte": startOfDay }
   })
-    .populate([
-      {
-        path: "items",
-        populate: [{ path: "user" }, { path: "task" }]
-      },
-      {
-        path: "created_by"
-      }
-    ])
-    .then(workSchedule => {
-      // If a work schedule was not found, return null
-      if (!workSchedule) {
-        return null;
+    .populate(["user", "task"])
+    .then(workScheduleItems => {
+      res.json(
+        workScheduleItems.map(workScheduleItem => {
+          const task = workScheduleItem.task;
+          const user = workScheduleItem.user;
+
+          return {
+            id: workScheduleItem._id,
+            start: workScheduleItem.start,
+            end: workScheduleItem.end,
+            task: {
+              id: task._id,
+              name: task.name,
+              color: task.color
+            },
+            user: {
+              id: user._id,
+              username: user.username,
+              name: user.name,
+              birthday: user.birthday,
+              area: user.area
+            }
+          };
+        })
+      );
+    })
+    .catch(error => {
+      res.status(500).json({ error: error.message });
+    });
+});
+
+router.post("/work-schedule/events", jwt({ secret: process.env.JWT_SECRET }), (req, res) => {
+  const { start, end, taskId, userId } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(taskId)) {
+    res.status(400).json({ message: "Specified task id is not valid" });
+    return;
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    res.status(400).json({ message: "Specified user id is not valid" });
+    return;
+  }
+
+  Promise.all([
+    Tasks.findOne({
+      _id: taskId,
+      is_active: true
+    }).then(task => {
+      if (!task) {
+        throw new Error("Task not found");
       }
 
-      // For each item found in the work schedule, populate its task and user and build the output object
-      const items = workSchedule.items.map(workScheduleItem => {
-        const task = workScheduleItem.task;
-        const user = workScheduleItem.user;
+      return task;
+    }),
+    Users.findOne({
+      _id: userId,
+      is_active: true
+    }).then(user => {
+      if (!user) {
+        throw new Error("User not found");
+      }
 
-        return {
+      return user;
+    })
+  ])
+    .then(([task, user]) => {
+      return WorkScheduleItem.create({
+        start,
+        end,
+        task: task._id,
+        user: user._id
+      }).then(workScheduleItem => {
+        res.json({
           id: workScheduleItem._id,
-          period: workScheduleItem.period,
+          start: workScheduleItem.start,
+          end: workScheduleItem.end,
           task: {
             id: task._id,
             name: task.name,
@@ -46,74 +109,75 @@ const getWorkSchedule = date =>
             birthday: user.birthday,
             area: user.area
           }
-        };
+        });
       });
-
-      const createdBy = workSchedule.created_by;
-
-      return {
-        id: workSchedule._id,
-        date: workSchedule.date,
-        remarks: workSchedule.remarks,
-        items,
-        createdAt: workSchedule.created_at,
-        createBy: {
-          id: createdBy._id,
-          username: createdBy.username,
-          name: createdBy.name,
-          birthday: createdBy.birthday,
-          area: createdBy.area
-        }
-      };
-    });
-
-router.get("/work-schedule", (req, res) => {
-  const { date } = req.query;
-
-  getWorkSchedule(date)
-    .then(workSchedule => {
-      res.json(workSchedule);
     })
     .catch(error => {
       res.status(500).json({ error: error.message });
     });
 });
 
-router.put("/work-schedule", jwt({ secret: process.env.JWT_SECRET }), (req, res) => {
-  const { date } = req.query;
-  const { remarks, items } = req.body;
+router.patch("/work-schedule/events/:eventId", jwt({ secret: process.env.JWT_SECRET }), (req, res) => {
+  const { eventId } = req.params;
+  const { start, end, taskId, userId } = req.body;
 
-  WorkSchedule.findOneAndUpdate(
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    res.status(400).json({ message: "Specified event id is not valid" });
+    return;
+  }
+
+  WorkScheduleItem.findOneAndUpdate(
+    eventId,
     {
-      date,
-      is_active: true
+      start,
+      end,
+      taskId,
+      userId
     },
-    { is_active: false }
+    {
+      omitUndefined: true,
+      new: true
+    }
   )
-    .then(() =>
-      Promise.all(
-        items.map(item =>
-          WorkScheduleItem.create({
-            period: item.period,
-            task: item.taskId,
-            user: item.userId
-          })
-        )
-      )
-    )
-    .then(workScheduleItems =>
-      WorkSchedule.create({
-        date,
-        remarks,
-        items: workScheduleItems.map(workScheduleItem => workScheduleItem._id),
-        created_at: new Date(),
-        created_by: req.user.userId,
-        is_active: true
-      })
-    )
-    .then(() => getWorkSchedule(date))
-    .then(workSchedule => {
-      res.json(workSchedule);
+    .populate(["user", "task"])
+    .then(workScheduleItem => {
+      const task = workScheduleItem.task;
+      const user = workScheduleItem.user;
+
+      res.json({
+        id: workScheduleItem._id,
+        start: workScheduleItem.start,
+        end: workScheduleItem.end,
+        task: {
+          id: task._id,
+          name: task.name,
+          color: task.color
+        },
+        user: {
+          id: user._id,
+          username: user.username,
+          name: user.name,
+          birthday: user.birthday,
+          area: user.area
+        }
+      });
+    })
+    .catch(error => {
+      res.status(500).json({ error: error.message });
+    });
+});
+
+router.delete("/work-schedule/events/:eventId", jwt({ secret: process.env.JWT_SECRET }), (req, res) => {
+  const { eventId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(eventId)) {
+    res.status(400).json({ message: "Specified event id is not valid" });
+    return;
+  }
+
+  WorkScheduleItem.findByIdAndRemove(eventId)
+    .then(() => {
+      res.json({ message: `Event with ${eventId} was removed successfully.` });
     })
     .catch(error => {
       res.status(500).json({ error: error.message });

@@ -107,7 +107,7 @@ router.delete("/absences/:absenceId", jwt({ secret: process.env.JWT_SECRET }), (
 
   Absences.findByIdAndDelete(absenceId)
     .then(() => {
-      res.json({ message: `Absence with ${absenceId} is removed successfully.` });
+      res.json({ message: `Absence with ${absenceId} was removed successfully.` });
     })
     .catch(error => {
       res.status(500).json({error: error.message});

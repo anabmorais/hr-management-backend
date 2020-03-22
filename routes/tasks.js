@@ -82,7 +82,7 @@ router.delete("/tasks/:taskId", jwt({ secret: process.env.JWT_SECRET }), (req, r
 
   Tasks.findByIdAndUpdate(taskId, { is_active: false })
     .then(() => {
-      res.json({ message: `Task with ${taskId} is removed successfully.` });
+      res.json({ message: `Task with ${taskId} was removed successfully.` });
     })
     .catch(error => {
       res.status(500).json({error: error.message});
