@@ -1,12 +1,13 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const jwt = require("express-jwt");
+const moment = require("moment");
 const Absences = require("../models/absences-model");
 const Users = require("../models/users-model");
 
 const router = express.Router();
 
-router.get("/absences", jwt({ secret: process.env.JWT_SECRET }), (req, res) => {
+router.get("/absences", (req, res) => {
   const { userId, fromDate, toDate } = req.query;
 
   const absencesQuery = Absences.find();
@@ -21,11 +22,11 @@ router.get("/absences", jwt({ secret: process.env.JWT_SECRET }), (req, res) => {
   }
 
   if (fromDate) {
-    absencesQuery.gte("date", fromDate);
+    absencesQuery.gte("date", moment(fromDate).startOf("day").toDate());
   }
 
   if (toDate) {
-    absencesQuery.lte("date", toDate);
+    absencesQuery.lte("date", moment(toDate).endOf("day").toDate());
   }
 
   absencesQuery

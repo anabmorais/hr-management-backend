@@ -11,9 +11,9 @@ const router = express.Router();
 
 router.get("/work-schedule/events", (req, res) => {
   const { date } = req.query;
+
   const startOfDay = moment(date).startOf("day").toDate();
   const endOfDay = moment(date).endOf("day").toDate();
-
 
   WorkScheduleItem.find({
     start: {"$lte": endOfDay },
